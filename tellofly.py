@@ -42,15 +42,18 @@ class FrontEnd(object):
 ########################
 
         openvr.init(openvr.VRApplication_Scene)
-        global poses, posesArr
+        global poses, posesArr, posesCurr, posedPrev
         poses = [] # will be populated with proper type after first call
-        posesArr = [2] # will be populated with proper type after first call
-        for i in range(2):
+        posesCurr = [] # will be populated with proper type after first call
+        posesPrev = [] # will be populated with proper type after first call
+        for i in range(1):
             poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
             hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
-            posesArr[i-1] = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[0][3])
-            print(posesArr[i-1])
-            print(hmd_pose.mDeviceToAbsoluteTracking)
+            posesPrev = posesCurr
+            posesCurr = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[0][3])
+            print(posesCurr)
+            print(posesPrev)
+            #print(hmd_pose.mDeviceToAbsoluteTracking)
             # print(hmd_pose.mDeviceToAbsoluteTracking)
             # sys.stdout.flush()
             # time.sleep(0.2)
@@ -164,24 +167,27 @@ class FrontEnd(object):
 
             time.sleep(1 / FPS)
 
-            global poses, posesArr
-            posesArr = [2]
-
-            for i in range(2):
+            global poses, posesArr, posesCurr, posedPrev
+            poses = []  # will be populated with proper type after first call
+            #posesCurr = []  # will be populated with proper type after first call
+            #posesPrev = []  # will be populated with proper type after first call
+            for i in range(1):
                 poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
                 hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
-                posesArr[i-1] = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[0][3])
-                print(posesArr[i-1])
-                print(hmd_pose.mDeviceToAbsoluteTracking)
-                print('index is' + str(i))
+                posesPrev = posesCurr
+                posesCurr = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[0][3])
+                print('curr: ' + str(posesCurr))
+                print('prev: ' + str(posesPrev))
+                # print(hmd_pose.mDeviceToAbsoluteTracking)
+                # print('index is' + str(i))
                 # sys.stdout.flush()
-                # time.sleep(0.2)
+                #time.sleep(0.2)
 
-                if (posesArr[-1] < posesArr[0]):
-                    self.for_back_velocity = S      # == "forward"
+                if (posesCurr < posesPrev):
+                    self.tello.send_rc_control(0, 40, 0, 0)     # == "forward"
 
-                elif (posesArr[-1] > posesArr[0]):
-                    self.for_back_velocity = S  # == "backward"
+                elif (posesCurr > posesPrev):
+                    self.tello.send_rc_control(0, -40, 0, 0)  # == "backward"
 
                 else:
                     self.for_back_velocity = 0
