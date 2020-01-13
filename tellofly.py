@@ -42,12 +42,16 @@ class FrontEnd(object):
 ########################
 
         openvr.init(openvr.VRApplication_Scene)
-        global poses
+        global poses, posesArr
         poses = [] # will be populated with proper type after first call
-        for i in range(1):
+        posesArr = [2] # will be populated with proper type after first call
+        for i in range(2):
             poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
             hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
+            posesArr[i-1] = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[0][3])
+            print(posesArr[i-1])
             print(hmd_pose.mDeviceToAbsoluteTracking)
+            # print(hmd_pose.mDeviceToAbsoluteTracking)
             # sys.stdout.flush()
             # time.sleep(0.2)
         # openvr.shutdown()
@@ -160,22 +164,27 @@ class FrontEnd(object):
 
             time.sleep(1 / FPS)
 
-            global poses
+            global poses, posesArr
+            posesArr = [2]
+
             for i in range(2):
                 poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
-                hmd_pose = poses[openvr .k_unTrackedDeviceIndex_Hmd]
+                hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
+                posesArr[i-1] = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[0][3])
+                print(posesArr[i-1])
                 print(hmd_pose.mDeviceToAbsoluteTracking)
+                print('index is' + str(i))
                 # sys.stdout.flush()
                 # time.sleep(0.2)
 
-                if (hmd_pose.mDeviceToAbsoluteTracking[0][2] < hmd_pose.mDeviceToAbsoluteTracking[1][2] ):
-                    self.yaw_velocity = -60     # == "a" | left rotation <-
+                if (posesArr[-1] < posesArr[0]):
+                    self.for_back_velocity = S      # == "forward"
 
-                elif (hmd_pose.mDeviceToAbsoluteTracking[0][2] > hmd_pose.mDeviceToAbsoluteTracking[1][2] ):
-                    self.yaw_velocity = 60      # == "d" | right rotation ->
+                elif (posesArr[-1] > posesArr[0]):
+                    self.for_back_velocity = S  # == "backward"
 
                 else:
-                    self.yaw_velocity = 0
+                    self.for_back_velocity = 0
 
 
         # Call it always before finishing. To deallocate resources.
