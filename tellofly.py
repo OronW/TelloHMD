@@ -18,7 +18,7 @@ S = 60
 # Frames per second of the pygame window display
 FPS = 25
 
-
+flag = False
 
 class FrontEnd(object):
     """ Maintains the Tello display and moves it through the keyboard keys.
@@ -171,6 +171,7 @@ class FrontEnd(object):
             poses = []  # will be populated with proper type after first call
             #posesCurr = []  # will be populated with proper type after first call
             #posesPrev = []  # will be populated with proper type after first call
+
             for i in range(1):
                 poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
                 hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
@@ -181,7 +182,7 @@ class FrontEnd(object):
                 # print(hmd_pose.mDeviceToAbsoluteTracking)
                 # print('index is' + str(i))
                 # sys.stdout.flush()
-                #time.sleep(0.2)
+                time.sleep(0.2)
 
                 if (posesCurr < posesPrev):
                     self.tello.send_rc_control(0, 40, 0, 0)     # == "forward"
@@ -235,6 +236,7 @@ class FrontEnd(object):
         elif key == pygame.K_t:  # takeoff
             self.tello.takeoff()
             self.send_rc_control = True
+            flag = True
         elif key == pygame.K_l:  # land
             self.tello.land()
             self.send_rc_control = False
