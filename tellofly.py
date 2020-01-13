@@ -7,7 +7,7 @@ import time
 import openvr
 import sys
 
-import pywifi
+
 import socket
 
 
