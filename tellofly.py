@@ -173,18 +173,16 @@ class FrontEnd(object):
             time.sleep(1 / FPS)
 
             global poses, posesArr, posesCurrX, posedPrevX, posesCurrY, posedPrevY
+            flag = True
             poses = []  # will be populated with proper type after first call
             #posesCurr = []  # will be populated with proper type after first call
             #posesPrev = []  # will be populated with proper type after first call
 
-            for i in range(1):
+            for i in range(2):
                 poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
                 hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
                 posesPrevX = posesCurrX
                 posesCurrX = (hmd_pose.mDeviceToAbsoluteTracking[0][3])
-
-                posesPrevY = posesCurrY
-                posesCurrY = (hmd_pose.mDeviceToAbsoluteTracking[1][3])
 
                 print('curr: ' + str(posesCurrX*1000))
                 print('prev: ' + str(posesPrevX*1000))
@@ -193,22 +191,56 @@ class FrontEnd(object):
                 # sys.stdout.flush()
                 # time.sleep(0.1)
 
-                if (posesCurrX*1000*1.01 < posesPrevX*1000):
-                    self.tello.send_rc_control(0, 20, 0, 0)     # == "forward"
 
-                elif (posesCurrX*1000 > 1.01*posesPrevX*1000):
-                    self.tello.send_rc_control(0, -20, 0, 0)  # == "backward"
+                # if (posesCurrX*1000*1.01 < posesPrevX*1000):
+                #     self.tello.send_rc_control(0, 60, 0, 0)     # == "forward"
+                #     flag = False
+                #
+                # elif (posesCurrX*1000 > 1.01*posesPrevX*1000):
+                #     self.tello.send_rc_control(0, -60, 0, 0)  # == "backward"
+                #     flag = False
+                #
+                # else:
+                #     self.tello.send_rc_control(0, 0, 0, 0)
+                #     flag = False
 
+########################################
+                # for i in range(2):
+                #     poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
+                #     hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
+                #
+                #     posesPrevY = posesCurrY
+                #     posesCurrY = (hmd_pose.mDeviceToAbsoluteTracking[1][3])
+                #
+                # if (posesCurrY*1000*1.001 < posesPrevY*1000):
+                #     self.tello.send_rc_control(0, 0, -60, 0)     # == "up"
+                #     flag = True
+                #
+                # elif (posesCurrY*1000 > 1.001*posesPrevY*1000):
+                #     self.tello.send_rc_control(0, 0, 60, 0)  # == "down"
+                #     flag = True
+                # else:
+                #     self.tello.send_rc_control(0, 0, 0, 0)
+                #     flag = True
 
-                if (posesCurrY*1000*1.01 < posesPrevY*1000):
-                    self.tello.send_rc_control(0, 0, 20, 0)     # == "forward"
+                    ########################################
+                for i in range(2):
+                    poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
+                    hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
 
-                elif (posesCurrY*1000 > 1.01*posesPrevY*1000):
-                    self.tello.send_rc_control(0, 0, -20, 0)  # == "backward"
+                    posesPrevY = posesCurrY
+                    posesCurrY = (hmd_pose.mDeviceToAbsoluteTracking[2][3])
 
+                if (posesCurrY * 1000 * 1.001 < posesPrevY * 1000):
+                    self.tello.send_rc_control(40, 0, 0, 0)  # == "side"
+                    flag = True
+
+                elif (posesCurrY * 1000 > 1.001 * posesPrevY * 1000):
+                    self.tello.send_rc_control(-40, 0, 0, 0)  # == "side"
+                    flag = True
                 else:
                     self.tello.send_rc_control(0, 0, 0, 0)
-
+                    flag = True
 
 
         # Call it always before finishing. To deallocate resources.
