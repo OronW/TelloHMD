@@ -42,17 +42,22 @@ class FrontEnd(object):
 ########################
 
         openvr.init(openvr.VRApplication_Scene)
-        global poses, posesArr, posesCurr, posedPrev
+        global poses, posesArr, posesCurrX, posedPrevX, posesCurrY, posedPrevY
         poses = [] # will be populated with proper type after first call
-        posesCurr = [] # will be populated with proper type after first call
-        posesPrev = [] # will be populated with proper type after first call
+        posesCurrX = [] # will be populated with proper type after first call
+        posesPrevX = [] # will be populated with proper type after first call
+        posesCurrY = []  # will be populated with proper type after first call
+        posesPrevY = []  # will be populated with proper type after first call
         for i in range(1):
             poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
             hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
-            posesPrev = posesCurr
-            posesCurr = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[0][3])
-            print(posesCurr)
-            print(posesPrev)
+            posesPrevX = posesCurrX
+            posesCurrX = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[0][3])
+
+            posesPrevY = posesCurrY
+            posesCurrY = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[1][3])
+            print(posesCurrX)
+            print(posesPrevX)
             #print(hmd_pose.mDeviceToAbsoluteTracking)
             # print(hmd_pose.mDeviceToAbsoluteTracking)
             # sys.stdout.flush()
@@ -167,7 +172,7 @@ class FrontEnd(object):
 
             time.sleep(1 / FPS)
 
-            global poses, posesArr, posesCurr, posedPrev
+            global poses, posesArr, posesCurrX, posedPrevX, posesCurrY, posedPrevY
             poses = []  # will be populated with proper type after first call
             #posesCurr = []  # will be populated with proper type after first call
             #posesPrev = []  # will be populated with proper type after first call
@@ -175,23 +180,35 @@ class FrontEnd(object):
             for i in range(1):
                 poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
                 hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
-                posesPrev = posesCurr
-                posesCurr = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[0][3])
-                print('curr: ' + str(posesCurr))
-                print('prev: ' + str(posesPrev))
-                # print(hmd_pose.mDeviceToAbsoluteTracking)
+                posesPrevX = posesCurrX
+                posesCurrX = (hmd_pose.mDeviceToAbsoluteTracking[0][3])
+
+                posesPrevY = posesCurrY
+                posesCurrY = (hmd_pose.mDeviceToAbsoluteTracking[1][3])
+
+                print('curr: ' + str(posesCurrX*1000))
+                print('prev: ' + str(posesPrevX*1000))
+                #print(hmd_pose.mDeviceToAbsoluteTracking)
                 # print('index is' + str(i))
                 # sys.stdout.flush()
-                time.sleep(0.2)
+                # time.sleep(0.1)
 
-                if (posesCurr < posesPrev):
-                    self.tello.send_rc_control(0, 40, 0, 0)     # == "forward"
+                if (posesCurrX*1000*1.01 < posesPrevX*1000):
+                    self.tello.send_rc_control(0, 20, 0, 0)     # == "forward"
 
-                elif (posesCurr > posesPrev):
-                    self.tello.send_rc_control(0, -40, 0, 0)  # == "backward"
+                elif (posesCurrX*1000 > 1.01*posesPrevX*1000):
+                    self.tello.send_rc_control(0, -20, 0, 0)  # == "backward"
+
+
+                if (posesCurrY*1000*1.01 < posesPrevY*1000):
+                    self.tello.send_rc_control(0, 0, 20, 0)     # == "forward"
+
+                elif (posesCurrY*1000 > 1.01*posesPrevY*1000):
+                    self.tello.send_rc_control(0, 0, -20, 0)  # == "backward"
 
                 else:
-                    self.for_back_velocity = 0
+                    self.tello.send_rc_control(0, 0, 0, 0)
+
 
 
         # Call it always before finishing. To deallocate resources.
