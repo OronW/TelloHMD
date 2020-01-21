@@ -18,7 +18,7 @@ S = 60
 # Frames per second of the pygame window display
 FPS = 25
 
-flag = False
+yawFlag = False
 
 class FrontEnd(object):
     """ Maintains the Tello display and moves it through the keyboard keys.
@@ -190,7 +190,7 @@ class FrontEnd(object):
 
             sy = np.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
 
-            singular = sy < 1e-6    # check condition
+            singular = sy < 1e-6    #  check condition
 
             if not singular:
                 x = np.arctan2(R[2, 1], R[2, 2])
@@ -310,24 +310,25 @@ class FrontEnd(object):
 
 
                 if (posesCurrX*100*1.01 < posesPrevX*100):
-                    self.tello.send_rc_control(0, 80, 0, 0)     # == "forward"
+                    self.tello.send_rc_control(0, 60, 0, 0)     # == "forward"
                     flag = False
 
                 elif (posesCurrX*100 > 1.01*posesPrevX*100):
-                    self.tello.send_rc_control(0, -80, 0, 0)  # == "backward"
+                    self.tello.send_rc_control(0, -60, 0, 0)  # == "backward"
                     flag = False
 
-                else:
-                    self.tello.send_rc_control(0, 0, 0, 0)
-                    flag = False
+                # else:
+                #     self.tello.send_rc_control(0, 0, 0, 0)
+                #     flag = False
+
 
 ########################################
-                for i in range(2):
-                    poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
-                    hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
+            for i in range(2):
+                poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
+                hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
 
-                    posesPrevZ = posesCurrZ
-                    posesCurrZ = (hmd_pose.mDeviceToAbsoluteTracking[1][3])
+                posesPrevZ = posesCurrZ
+                posesCurrZ = (hmd_pose.mDeviceToAbsoluteTracking[1][3])
 
                 if (posesCurrZ*100*1.0001 < posesPrevZ*100):
                     self.tello.send_rc_control(0, 0, -80, 0)     # == "up"
@@ -336,17 +337,17 @@ class FrontEnd(object):
                 elif (posesCurrZ*100 > 1.0001*posesPrevZ*100):
                     self.tello.send_rc_control(0, 0, 80, 0)  # == "down"
                     flag = True
-                else:
-                    self.tello.send_rc_control(0, 0, 0, 0)
-                    flag = True
+                # else:
+                #     self.tello.send_rc_control(0, 0, 0, 0)
+                #     flag = True
 
                     ########################################
-                for i in range(2):
-                    poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
-                    hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
+            for i in range(2):
+                poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
+                hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
 
-                    posesPrevY = posesCurrY
-                    posesCurrY = (hmd_pose.mDeviceToAbsoluteTracking[2][3])
+                posesPrevY = posesCurrY
+                posesCurrY = (hmd_pose.mDeviceToAbsoluteTracking[2][3])
 
                 if (posesCurrY * 1000  * 1.0001 < posesPrevY * 1000):
                     self.tello.send_rc_control(60, 0, 0, 0)  # == "side"
@@ -355,19 +356,19 @@ class FrontEnd(object):
                 elif (posesCurrY * 1000 > 1.0001 * posesPrevY * 1000):
                     self.tello.send_rc_control(-60, 0, 0, 0)  # == "side"
                     flag = True
-                else:
-                    self.tello.send_rc_control(0, 0, 0, 0)
-                    flag = True
+                # else:
+                #     self.tello.send_rc_control(0, 0, 0, 0)
+                #     flag = True
 
-                ##########################################
-                for i in range(2):
-                    poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
-                    hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
+            ##########################################
+            for i in range(2):
+                poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
+                hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
 
                 rotAnglePrev = rotAngleCurr
                 rotAngleCurr = ([hmd_pose.mDeviceToAbsoluteTracking[0][0], hmd_pose.mDeviceToAbsoluteTracking[0][1], hmd_pose.mDeviceToAbsoluteTracking[0][2]],
                                 [hmd_pose.mDeviceToAbsoluteTracking[1][0], hmd_pose.mDeviceToAbsoluteTracking[1][1], hmd_pose.mDeviceToAbsoluteTracking[1][2]],
-                                [hmd_pose.mDeviceToAbsoluteTracking[2][0], hmd_pose.mDeviceToAbsoluteTracking[2][1], hmd_pose.mDeviceToAbsoluteTracking[2][2]])
+                               [hmd_pose.mDeviceToAbsoluteTracking[2][0], hmd_pose.mDeviceToAbsoluteTracking[2][1], hmd_pose.mDeviceToAbsoluteTracking[2][2]])
 
                 prevAngle = rotationMatrixToEulerAngles(np.asanyarray(rotAnglePrev))
                 currAngle = rotationMatrixToEulerAngles(np.asanyarray(rotAngleCurr))
@@ -377,8 +378,32 @@ class FrontEnd(object):
                 def eulerToDegree(euler):
                     return ((euler) / (2 * np.pi)) * 360
 
-                degAngle = eulerToDegree(angle)
+                degAngle = int(eulerToDegree(angle))
                 print("Angle: " + str(degAngle))
+                turnAngle = degAngle/5 *5
+
+                if (prevAngle[1]*1000 > currAngle[1]):
+                    self.tello.send_rc_control(0, 0, 0, -60)
+                elif (currAngle[1] < 0.001*prevAngle[1]):
+                    self.tello.send_rc_control(0, 0, 0, 60)
+                # else:
+                #     self.tello.send_rc_control(0, 0, 0, 0)
+
+                # if pygame.K_y:
+                #     yawFlag = True
+                #
+                # if (yawFlag):
+                #     degAngle = eulerToDegree(angle)
+                #     print("Angle: " + str(degAngle))
+                #
+                #     if (degAngle >= 0.1):
+                #         self.yaw_velocity = -100
+                #     elif (degAngle < -0.1):
+                #         self.yaw_velocity = 100
+                #     else:
+                #         self.yaw_velocity = 0
+
+
 
 
 
@@ -408,6 +433,8 @@ class FrontEnd(object):
             self.yaw_velocity = -S
         elif key == pygame.K_d:  # set yaw clockwise velocity
             self.yaw_velocity = S
+        elif key == pygame.K_y:
+            yawFlag = True
 
     def keyup(self, key):
         """ Update velocities based on key released

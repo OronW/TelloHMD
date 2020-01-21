@@ -232,7 +232,7 @@ class Tello:
         """
         # Commands very consecutive makes the drone not respond to them. So wait at least self.TIME_BTW_COMMANDS seconds
 
-        #self.LOGGER.info('Send command (no expect response): ' + command)
+        self.LOGGER.info('Send command (no expect response): ' + command)
         self.clientSocket.sendto(command.encode('utf-8'), self.address)
 
     @accepts(command=str, timeout=int)
