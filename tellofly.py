@@ -31,6 +31,11 @@ class FrontEnd(object):
             - W and S: Up and down.
     """
 
+
+
+
+
+        ###############################
     def __init__(self):
         # Init pygame
         pygame.init()
@@ -39,10 +44,11 @@ class FrontEnd(object):
         pygame.display.set_caption("Oron - Tello video stream")
         self.screen = pygame.display.set_mode([960, 720])
 
+
 ########################
 
         openvr.init(openvr.VRApplication_Scene)
-        global poses, posesArr, posesCurrX, posedPrevX, posesCurrY, posedPrevY, posesCurrZ, posedPrevZ
+        global poses, posesArr, posesCurrX, posedPrevX, posesCurrY, posedPrevY, posesCurrZ, posedPrevZ, rotAngleCurr, rotAnglePrev
         poses = [] # will be populated with proper type after first call
         posesCurrX = [] # will be populated with proper type after first call
         posesPrevX = [] # will be populated with proper type after first call
@@ -50,6 +56,9 @@ class FrontEnd(object):
         posesPrevY = []  # will be populated with proper type after first call
         posesCurrZ = []  # will be populated with proper type after first call
         posesPrevZ = []  # will be populated with proper type after first call
+        rotAngleCurr = []
+        rotAnglePrev = []
+
         for i in range(1):
             poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
             hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
@@ -61,6 +70,12 @@ class FrontEnd(object):
 
             posesPrevZ = posesCurrZ
             posesCurrZ = np.transpose(hmd_pose.mDeviceToAbsoluteTracking[1][3])
+
+            rotAnglePrev = rotAngleCurr
+            rotAngleCurr = ([hmd_pose.mDeviceToAbsoluteTracking[0][0], hmd_pose.mDeviceToAbsoluteTracking[0][1], hmd_pose.mDeviceToAbsoluteTracking[0][2]],
+                            [hmd_pose.mDeviceToAbsoluteTracking[1][0], hmd_pose.mDeviceToAbsoluteTracking[1][1], hmd_pose.mDeviceToAbsoluteTracking[1][2]],
+                            [hmd_pose.mDeviceToAbsoluteTracking[2][0], hmd_pose.mDeviceToAbsoluteTracking[2][1], hmd_pose.mDeviceToAbsoluteTracking[2][2]])
+
             print(posesCurrX)
             print(posesPrevX)
             #print(hmd_pose.mDeviceToAbsoluteTracking)
@@ -89,7 +104,104 @@ class FrontEnd(object):
 
     def run(self):
 
+        ##############################
 
+        def m2rotaxis(m):
+            """Return angles, axis pair that corresponds to rotation matrix m.
+
+            The case where ``m`` is the identity matrix corresponds to a singularity
+            where any rotation axis is valid. In that case, ``Vector([1, 0, 0])``,
+            is returned.
+            """
+            eps = 1e-5
+
+            # Check for singularities a la http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
+            # if (
+            #         abs(m[0, 1] - m[1, 0]) < eps
+            #         and abs(m[0, 2] - m[2, 0]) < eps
+            #         and abs(m[1, 2] - m[2, 1]) < eps
+            # ):
+            #     # Singularity encountered. Check if its 0 or 180 deg
+            #     if (
+            #             abs(m[0, 1] + m[1, 0]) < eps
+            #             and abs(m[0, 2] + m[2, 0]) < eps
+            #             and abs(m[1, 2] + m[2, 1]) < eps
+            #             and abs(m[0, 0] + m[1, 1] + m[2, 2] - 3) < eps
+            #     ):
+            #         angle = 0
+            #     else:
+            #         angle = np.pi
+            # else:
+            # Angle always between 0 and pi
+            # Sense of rotation is defined by axis orientation
+            t = 0.5 * (np.trace(m) - 1)
+            t = max(-1, t)
+            t = min(1, t)
+            angle = np.arccos(t)
+
+            if angle < 1e-15:
+                # Angle is 0
+                return 0.0, np.array([1, 0, 0])
+            elif angle < np.pi:
+                # Angle is smaller than pi
+                x = m[2, 1] - m[1, 2]
+                y = m[0, 2] - m[2, 0]
+                z = m[1, 0] - m[0, 1]
+                axis = np.array(x, y, z)
+                axis.normalize()
+                return angle, axis
+            else:
+                # Angle is pi - special case!
+                m00 = m[0, 0]
+                m11 = m[1, 1]
+                m22 = m[2, 2]
+                if m00 > m11 and m00 > m22:
+                    x = np.sqrt(m00 - m11 - m22 + 0.5)
+                    y = m[0, 1] / (2 * x)
+                    z = m[0, 2] / (2 * x)
+                elif m11 > m00 and m11 > m22:
+                    y = np.sqrt(m11 - m00 - m22 + 0.5)
+                    x = m[0, 1] / (2 * y)
+                    z = m[1, 2] / (2 * y)
+                else:
+                    z = np.sqrt(m22 - m00 - m11 + 0.5)
+                    x = m[0, 2] / (2 * z)
+                    y = m[1, 2] / (2 * z)
+                axis = np.array(x, y, z)
+                axis.normalize()
+                return np.pi, axis
+
+
+        ######################################
+
+        # Checks if a matrix is a valid rotation matrix.
+        def isRotationMatrix(R):
+            Rt = np.transpose(R)
+            shouldBeIdentity = np.dot(Rt, R)
+            I = np.identity(3, dtype=R.dtype)
+            n = np.linalg.norm(I - shouldBeIdentity)
+            return n < 1e-6  # <- some epsilon
+
+
+        # Calculates rotation matrix to euler angles
+        def rotationMatrixToEulerAngles(R):
+
+            assert (isRotationMatrix(R))
+
+            sy = np.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+
+            singular = sy < 1e-6    # check condition
+
+            if not singular:
+                x = np.arctan2(R[2, 1], R[2, 2])
+                y = np.arctan2(-R[2, 0], sy)
+                z = np.arctan2(R[1, 0], R[0, 0])
+            else:
+                x = np.arctan2(-R[1, 2], R[1, 1])
+                y = np.arctan2(-R[2, 0], sy)
+                z = 0
+
+            return np.array([x, y, z])
 
         ############
         white = (255, 255, 255)
@@ -177,7 +289,7 @@ class FrontEnd(object):
 
             time.sleep(1 / FPS)
 
-            global poses, posesArr, posesCurrX, posedPrevX, posesCurrY, posedPrevY, posesCurrZ, posedPrevZ
+            global poses, posesArr, posesCurrX, posedPrevX, posesCurrY, posedPrevY, posesCurrZ, posedPrevZ, rotAnglePrev, rotAngleCurr
             flag = True
             poses = []  # will be populated with proper type after first call
             #posesCurr = []  # will be populated with proper type after first call
@@ -189,8 +301,8 @@ class FrontEnd(object):
                 posesPrevX = posesCurrX
                 posesCurrX = (hmd_pose.mDeviceToAbsoluteTracking[0][3])
 
-                print('curr: ' + str(posesCurrX*1000))
-                print('prev: ' + str(posesPrevX*1000))
+                #print('curr: ' + str(posesCurrX*1000))
+                #print('prev: ' + str(posesPrevX*1000))
                 #print(hmd_pose.mDeviceToAbsoluteTracking)
                 # print('index is' + str(i))
                 # sys.stdout.flush()
@@ -246,6 +358,29 @@ class FrontEnd(object):
                 else:
                     self.tello.send_rc_control(0, 0, 0, 0)
                     flag = True
+
+                ##########################################
+                for i in range(2):
+                    poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
+                    hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
+
+                rotAnglePrev = rotAngleCurr
+                rotAngleCurr = ([hmd_pose.mDeviceToAbsoluteTracking[0][0], hmd_pose.mDeviceToAbsoluteTracking[0][1], hmd_pose.mDeviceToAbsoluteTracking[0][2]],
+                                [hmd_pose.mDeviceToAbsoluteTracking[1][0], hmd_pose.mDeviceToAbsoluteTracking[1][1], hmd_pose.mDeviceToAbsoluteTracking[1][2]],
+                                [hmd_pose.mDeviceToAbsoluteTracking[2][0], hmd_pose.mDeviceToAbsoluteTracking[2][1], hmd_pose.mDeviceToAbsoluteTracking[2][2]])
+
+                prevAngle = rotationMatrixToEulerAngles(np.asanyarray(rotAnglePrev))
+                currAngle = rotationMatrixToEulerAngles(np.asanyarray(rotAngleCurr))
+
+                angle = currAngle[1] - prevAngle[1] # negative = right, positive = left
+
+                def eulerToDegree(euler):
+                    return ((euler) / (2 * np.pi)) * 360
+
+                degAngle = eulerToDegree(angle)
+                print("Angle: " + str(degAngle))
+
+
 
 
         # Call it always before finishing. To deallocate resources.
