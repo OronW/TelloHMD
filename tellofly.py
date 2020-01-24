@@ -6,8 +6,6 @@ import time
 
 import openvr
 import sys
-
-
 import socket
 
 
@@ -34,8 +32,6 @@ class FrontEnd(object):
 
 
 
-
-        ###############################
     def __init__(self):
         # Init pygame
         pygame.init()
@@ -43,9 +39,6 @@ class FrontEnd(object):
         # Creat pygame window
         pygame.display.set_caption("Oron - Tello video stream")
         self.screen = pygame.display.set_mode([960, 720])
-
-
-########################
 
         openvr.init(openvr.VRApplication_Scene)
         global poses, posesArr, posesCurrX, posedPrevX, posesCurrY, posedPrevY, posesCurrZ, posedPrevZ, rotAngleCurr, rotAnglePrev
@@ -78,14 +71,6 @@ class FrontEnd(object):
 
             print(posesCurrX)
             print(posesPrevX)
-            #print(hmd_pose.mDeviceToAbsoluteTracking)
-            # print(hmd_pose.mDeviceToAbsoluteTracking)
-            # sys.stdout.flush()
-            # time.sleep(0.2)
-        # openvr.shutdown()
-
-        ############################
-
 
         # Init Tello object that interacts with the Tello drone
         self.tello = Tello()
@@ -104,18 +89,11 @@ class FrontEnd(object):
 
     def run(self):
 
-        ##############################
 
-        def m2rotaxis(m):
-            """Return angles, axis pair that corresponds to rotation matrix m.
+        def m2rotaxis(m):   # get the rotation out of the 3x3 matrix
 
-            The case where ``m`` is the identity matrix corresponds to a singularity
-            where any rotation axis is valid. In that case, ``Vector([1, 0, 0])``,
-            is returned.
-            """
             eps = 1e-5
 
-            # Check for singularities a la http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
             # if (
             #         abs(m[0, 1] - m[1, 0]) < eps
             #         and abs(m[0, 2] - m[2, 0]) < eps
@@ -172,8 +150,6 @@ class FrontEnd(object):
                 return np.pi, axis
 
 
-        ######################################
-
         # Checks if a matrix is a valid rotation matrix.
         def isRotationMatrix(R):
             Rt = np.transpose(R)
@@ -181,7 +157,6 @@ class FrontEnd(object):
             I = np.identity(3, dtype=R.dtype)
             n = np.linalg.norm(I - shouldBeIdentity)
             return n < 1e-6  # <- some epsilon
-
 
         # Calculates rotation matrix to euler angles
         def rotationMatrixToEulerAngles(R):
@@ -203,7 +178,6 @@ class FrontEnd(object):
 
             return np.array([x, y, z])
 
-        ############
         white = (255, 255, 255)
         green = (0, 255, 0)
         blue = (0, 0, 128)
@@ -237,7 +211,7 @@ class FrontEnd(object):
         # to the display surface object
         # at the center coordinate.
         self.screen.blit(text, textRect)
-        ############
+
 
 
         if not self.tello.connect():
@@ -301,12 +275,7 @@ class FrontEnd(object):
                 posesPrevX = posesCurrX
                 posesCurrX = (hmd_pose.mDeviceToAbsoluteTracking[0][3])
 
-                #print('curr: ' + str(posesCurrX*1000))
-                #print('prev: ' + str(posesPrevX*1000))
-                #print(hmd_pose.mDeviceToAbsoluteTracking)
-                # print('index is' + str(i))
-                # sys.stdout.flush()
-                # time.sleep(0.1)
+
 
 
                 if (posesCurrX*100*1.01 < posesPrevX*100):
@@ -317,12 +286,11 @@ class FrontEnd(object):
                     self.tello.send_rc_control(0, -60, 0, 0)  # == "backward"
                     flag = False
 
-                # else:
-                #     self.tello.send_rc_control(0, 0, 0, 0)
-                #     flag = False
+                else:
+                    self.tello.send_rc_control(0, 0, 0, 0)
 
 
-########################################
+
             for i in range(2):
                 poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
                 hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
@@ -337,11 +305,10 @@ class FrontEnd(object):
                 elif (posesCurrZ*100 > 1.0001*posesPrevZ*100):
                     self.tello.send_rc_control(0, 0, 80, 0)  # == "down"
                     flag = True
-                # else:
-                #     self.tello.send_rc_control(0, 0, 0, 0)
-                #     flag = True
+                else:
+                    self.tello.send_rc_control(0, 0, 0, 0)
+                    flag = True
 
-                    ########################################
             for i in range(2):
                 poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
                 hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
@@ -356,11 +323,10 @@ class FrontEnd(object):
                 elif (posesCurrY * 1000 > 1.0001 * posesPrevY * 1000):
                     self.tello.send_rc_control(-60, 0, 0, 0)  # == "side"
                     flag = True
-                # else:
-                #     self.tello.send_rc_control(0, 0, 0, 0)
-                #     flag = True
+                else:
+                    self.tello.send_rc_control(0, 0, 0, 0)
+                    flag = True
 
-            ##########################################
             for i in range(2):
                 poses, _ = openvr.VRCompositor().waitGetPoses(poses, None)
                 hmd_pose = poses[openvr.k_unTrackedDeviceIndex_Hmd]
@@ -402,9 +368,6 @@ class FrontEnd(object):
                 #         self.yaw_velocity = 100
                 #     else:
                 #         self.yaw_velocity = 0
-
-
-
 
 
 
